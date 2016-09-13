@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 //this program should play a chess game with another player based on
 //the board
 /** some information about the program
@@ -34,12 +35,14 @@ WROOK=5,BROOK=-5,WQUEEN=9,BQUEEN=-9,WKING=100,BKING=-100,SQUARE=0}pieces;
 typedef enum{WHITE=1,BLACK=-1}player;
  typedef struct move
  {
- int inr,inc,outr,outc,pchange;//pchange if the pawn need to change to other pieces according to it's value
+ int inr,inc,outr,outc,specialmove;
+ /*specialmove  if the pawn need to change to other pieces according to it's value if it is -1 then it is not pawn*/
  }move;
 int board[8][8];
-int spccase[8]={-1,-1,0,0,0,0,0,0};//i,j for pawn special moves,tabyete twelh ll2byd wl2swad ,last to for special tie cases
-//first to cloning the other player and second for the 50 moves in the last game
-//the case where no move it available is else where
+int spccase[8]={-1,-1,0,0,0,0,0,0};//row,col,white long castling,short castling,black long castling,short castling,50+ draw ,cloning
+/* i,j for pawn special moves,long,short castling for white and black  ,last two for special tie cases
+* first to cloning the other player and second for the 50 moves in the last game
+* the case where no move it available is else where */
 void init();
 void prtboard();
 int options(player,move**);
@@ -52,10 +55,11 @@ int score();
 /*######################*/
 int main()
 {
-    move* ex;
- init();
- prtboard();
- printf("poss=%d\n",options(WHITE,&ex));
+   move* p;
+   board[4][3]=WPAWN;
+   prtboard();
+   printf("%d\n",options(WHITE,&p));
+   printf("inr=%d inc=%d outr=%d outc=%d\n",p[0].inr,p[0].inc,p[0].outr,p[0].outc);
 return 0;
 }
 /*######################*/
@@ -67,8 +71,8 @@ board[0][1]=WKNIGHT;
 board[0][6]=WKNIGHT;
 board[0][2]=WBISHOP;
 board[0][5]=WBISHOP;
-board[0][3]=WKING;
-board[0][4]=WQUEEN;
+board[0][4]=WKING;
+board[0][3]=WQUEEN;
 for(int i=1;i<7;i++)
     {
      for(int j=0;j<8;j++)
@@ -88,8 +92,8 @@ board[7][1]=BKNIGHT;
 board[7][6]=BKNIGHT;
 board[7][2]=BBISHOP;
 board[7][5]=BBISHOP;
-board[7][3]=BKING;
-board[7][4]=BQUEEN;
+board[7][4]=BKING;
+board[7][3]=BQUEEN;
 }
 void prtboard()
 {
@@ -138,21 +142,38 @@ for(int j=0;j<8;j++)
 }
 int options(player p,move** list)
 {
-int i,j,len=0,tmp;
+int i,j,len=0,tmp,insert=0,c=0;
+insert_gate:
 if(p==WHITE)
     {
     if(spccase[2]==1)
-        len++;
+      {
+           if(!insert)len++;
+        else
+        {(*list)[c].inc=4; (*list)[c].inr=0; (*list)[c].outc=2; (*list)[c].outr=0; (*list)[c].specialmove=-1; c++;}
+      }
     if(spccase[3]==1)
-        len++;
+       {
+          if(!insert)len++;
+        else
+        {(*list)[c].inc=4; (*list)[c].inr=0; (*list)[c].outc=6; (*list)[c].outr=0; (*list)[c].specialmove=-1; c++;}
+       }
     }
 if(p==BLACK)
     {
-     if(spccase[4]==1)
-        len++;
-     if(spccase[5]==1)
-        len++;
-    }//askes for the tabyeth
+    if(spccase[4]==1)
+      {
+           if(!insert)len++;
+        else
+        {(*list)[c].inc=4; (*list)[c].inr=7; (*list)[c].outc=2; (*list)[c].outr=7; (*list)[c].specialmove=-1; c++;}
+      }
+    if(spccase[5]==1)
+       {
+          if(!insert)len++;
+        else
+        {(*list)[c].inc=4; (*list)[c].inr=7; (*list)[c].outc=6; (*list)[c].outr=7; (*list)[c].specialmove=-1; c++;}
+       }
+    }//asks for the castling
 for(i=0;i<8;i++)
 {
     for(j=0;j<8;j++)
@@ -165,101 +186,381 @@ for(i=0;i<8;i++)
         case WPAWN: if((i+p)%7==0)//the pawn is on the other side
                         {
                             if(board[(i+p)][j]==SQUARE)
-                                 len+=3;//can become queen rook knight bishop
+                                 {
+                                  if(!insert)len+=4;
+                                else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j; (*list)[c].specialmove=WKNIGHT*p; c++;//knight
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j; (*list)[c].specialmove=WBISHOP*p; c++;//bishop
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j; (*list)[c].specialmove=WROOK*p; c++;//rook
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j; (*list)[c].specialmove=WQUEEN*p; c++;//queen
+                                }
+                                 }
                             if(j<7 &&board[(i+p)][j+1]*p<0)//if the right square is enemy
-                                len+=3;
+                                {
+                                  if(!insert)len+=4;
+                                else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j+1; (*list)[c].specialmove=WKNIGHT*p; c++;//knight
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j+1; (*list)[c].specialmove=WBISHOP*p; c++;//bishop
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j+1; (*list)[c].specialmove=WROOK*p; c++;//rook
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j+1; (*list)[c].specialmove=WQUEEN*p; c++;//queen
+                                }
+                                 }
                             if(j>0 &&board[(i+p)][j-1]*p<0)//if the left square is enemy
-                                len+=3;
+                                {
+                                  if(!insert)len+=4;
+                                else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j-1; (*list)[c].specialmove=WKNIGHT*p; c++;//knight
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j-1; (*list)[c].specialmove=WBISHOP*p; c++;//bishop
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j-1; (*list)[c].specialmove=WROOK*p; c++;//rook
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j-1; (*list)[c].specialmove=WQUEEN*p; c++;//queen
+                                }
+                                 }
                         }
-                    if(i%7!=0 && board[i+p][j]==SQUARE)//can move on square 'forward'
-                        len++;
-                    if(j<7 && board[i+p][j+1]*p<0)//can eat to the right
-                        len++;
-                    if(j>0 && board[i+p][j-1]*p<0)//can eat to the left
-                        len++;
-                    if((i-p)%7==0)//the pawn is on his initial square
-                    {
-                        if(board[i+p][j]==SQUARE && board[i+2*p][j]==SQUARE)//can move 2 squares
-                            len++;
-                    }
-                    if(2*i-p==7)//if white is on row 4 or black on row 3 for potential special move
-                    {
-                     if(i+p==spccase[0] && (j-spccase[1]==1 || spccase[1]-j==1))
-                        len++;
-                    }
+                        else
+                        {
+                        if(i%7!=0 && board[i+p][j]==SQUARE)//can move one square 'forward'
+                            {
+                            if(!insert)len++;
+                            else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                            }
+						//warning if the pawn is on the first raw of his side this will not count him
+                        if(j<7 && board[i+p][j+1]*p<0)//can eat to the right
+                           {
+                            if(!insert)len++;
+                            else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j+1; (*list)[c].specialmove=-1; c++;
+                                }
+                            }
+                        if(j>0 && board[i+p][j-1]*p<0)//can eat to the left
+                            {
+                            if(!insert)len++;
+                            else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=j-1; (*list)[c].specialmove=-1; c++;
+                                }
+                            }
+                        if((i-p)%7==0)//the pawn is on his initial square
+                            {
+                            if(board[i+p][j]==SQUARE && board[i+2*p][j]==SQUARE)//can move 2 squares
+                               {
+                                if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+2*p; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                               }
+                            }
+                        if(2*i-p==7)//if white is on row 4 or black on row 3 for potential special move
+                            {
+                            if(i+p==spccase[0] && (j-spccase[1]==1 || spccase[1]-j==1))
+                               {
+                               if(!insert)len++;
+                                else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+p; (*list)[c].outc=spccase[1]; (*list)[c].specialmove=-1; c++;
+                                //specialmove is -1 because he did not change value
+                                }
+                               }
+                            }
+                        }
                     break;
-                    //stoped here
+
         case BROOK:
-        case WROOK: tmp=i-1;
-                    while(tmp>-1)//left side
+        case WROOK: queen_gate0: tmp=i-1;
+                    while(tmp>-1)//bottom side
                         {
                         if(board[tmp][j]==SQUARE)
-                            {len++; tmp--; continue;}
+                            {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                            tmp--; continue;
+                            }
                         if(board[tmp][j]*p<0)//first enemy
-                            len++;
+                            {
+                                if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                            }
                         break;
                         }
                     tmp=i+1;
-                    while(tmp<8)//right side
+                    while(tmp<8)//upper side
                         {
                         if(board[tmp][j]==SQUARE)
-                            {len++; tmp++; continue;}
+                            {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                            tmp++; continue;
+                            }
                         if(board[tmp][j]*p<0)//first enemy
-                            len++;
+                            {
+                                if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j; (*list)[c].specialmove=-1; c++;
+                                }
+                            }
                         break;
                         }
                     tmp=j-1;
-                    while(tmp>-1)//the bottom side of the ROOK
+                    while(tmp>-1)//left side
                     {
                     if(board[i][tmp]==SQUARE)
-                        {len++; tmp--; continue;}
+                        {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i; (*list)[c].outc=tmp; (*list)[c].specialmove=-1; c++;
+                                }
+                            tmp--; continue;
+                        }
                     if(board[i][tmp]*p<0)
-                        len++;
+                      {
+                           if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i; (*list)[c].outc=tmp; (*list)[c].specialmove=-1; c++;
+                                }
+                      }
                     break;
                     }
                     tmp=j+1;
-                    while(tmp<8)//the upper side
+                    while(tmp<8)//the right side
                     {
                     if(board[i][tmp]==SQUARE)
-                        {len++; tmp++; continue;}
+                        {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i; (*list)[c].outc=tmp; (*list)[c].specialmove=-1; c++;
+                                }
+                            tmp++; continue;
+                        }
                     if(board[i][tmp]*p<0)
-                        len++;
+                      {
+                           if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i; (*list)[c].outc=tmp; (*list)[c].specialmove=-1; c++;
+                                }
+                      }
                     break;
                     }
+					if(board[i][j]==WQUEEN*p)//check if white or black queen
+					  goto queen_gate1;
                     break;
         case BKNIGHT:
         case WKNIGHT: if(i+2<8)//the two upper squares
                         {
                             if(j+1<8 &&(board[i+2][j+1]*p<=0))//not a friend
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+2; (*list)[c].outc=j+1; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                             if(j-1>-1&&(board[i+2][j-1]*p<=0))
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+2; (*list)[c].outc=j-1; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                         }
                       if(i-2>-1)//the two bottom squares
                       {
                           if(j+1<8 &&(board[i-2][j+1]*p<=0))//not a friend
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i-2; (*list)[c].outc=j+1; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                           if(j-1>-1&&(board[i-2][j-1]*p<=0))
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i-2; (*list)[c].outc=j-1; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                       }
                       if(j+2<8)//the two right squares squares
                         {
                             if(i+1<8 &&(board[i+1][j+2]*p<=0))//not a friend
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+1; (*list)[c].outc=j+2; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                             if(i-1>-1&&(board[i-1][j+2]*p<=0))
-                                len++;
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i-1; (*list)[c].outc=j+2; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                         }
                       if(j-2>-1)//the two left squares squares
                         {
-                            if(i+1<8 &&(board[i+1][j-2]*p<=0))//not a friend
-                                len++;
-                            if(i-1>-1&&(board[i-1][j-2]*p<=0))
-                                len++;
+                           if(i+1<8 &&(board[i+1][j+2]*p<=0))//not a friend
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i+1; (*list)[c].outc=j-2; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
+                            if(i-1>-1&&(board[i-1][j+2]*p<=0))
+                                {
+                                if(!insert)len++;
+                                else
+                                  {
+                                      (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=i-1; (*list)[c].outc=j-2; (*list)[c].specialmove=-1; c++;
+                                  }
+                                }
                         }
                         break;
-                        //stoped here
+		case BBISHOP:
+		case WBISHOP: queen_gate1:
+					  tmp=i+1;
+					  while(tmp<8 && j+tmp-i<8)//right-upper diaginal
+					  {
+
+						 if(board[tmp][j+tmp-i]==SQUARE)
+						   {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j+tmp-i; (*list)[c].specialmove=-1; c++;
+                                }
+                            tmp++; continue;
+                           }
+						 if(board[tmp][j+tmp-i]*p<0)
+							 {
+                            if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j+tmp-i; (*list)[c].specialmove=-1; c++;
+                                }
+							 }
+						 break;
+					  }
+					  tmp=i+1;
+					  while(tmp<8 && j-tmp+i>-1)//left-upper diaginal
+					  {
+						 if(board[tmp][j+i-tmp]==SQUARE)
+						 {
+						      if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j-tmp+i; (*list)[c].specialmove=-1; c++;
+                                }
+						     tmp++; continue;
+                         }
+						 if(board[tmp][j+i-tmp]*p<0)
+							{
+							  if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j-tmp+i; (*list)[c].specialmove=-1; c++;
+                                }
+							}
+						 break;
+					  }
+					  tmp=i-1;
+					  while(tmp>-1 && j+tmp-i>-1)//left-bottom diaginal
+					  {
+						if(board[tmp][j+tmp-i]==SQUARE)
+						 {
+						      if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j+tmp-i; (*list)[c].specialmove=-1; c++;
+                                }
+						     tmp--; continue;
+                         }
+						 if(board[tmp][j+tmp-i]*p<0)
+							{
+							  if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j+tmp-i; (*list)[c].specialmove=-1; c++;
+                                }
+							}
+						 break;
+					  }
+					  tmp=i-1;
+					  while(tmp>-1 && j-tmp+i<8)//right-bottom diaginal
+					  {
+
+						 if(board[tmp][j-tmp+i]==SQUARE)
+						 {
+						      if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j-tmp+i; (*list)[c].specialmove=-1; c++;
+                                }
+						     tmp--; continue;
+                         }
+						 if(board[tmp][j-tmp+i]*p<0)
+							 {
+							  if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=tmp; (*list)[c].outc=j-tmp+i; (*list)[c].specialmove=-1; c++;
+                                }
+							}
+						 break;
+					  }
+					 break;
+		case BQUEEN:
+		case WQUEEN: //will use goto statments
+						goto queen_gate0;
+		case BKING:
+		case WKING: for(int k=i-1;k<=i+1;k++)
+						for(int l=j-1;l<=j+1;l++)
+						{
+							if(k<0 || k>7 || l<0 || l>7) continue;
+							if(board[k][l]*p<=0)//not a friend
+							  {
+                                if(!insert)len++;
+                                 else
+                                {
+                                (*list)[c].inr=i; (*list)[c].inc=j; (*list)[c].outr=k; (*list)[c].outc=l; (*list)[c].specialmove=-1; c++;
+                                }
+							  }
+						}
+					break;
         }
     }
 }
+ if(!insert)//making array
+ {
+     *list=malloc(len*sizeof(move));
+     insert=1;
+     goto insert_gate;
+ }
 return len;
 }
