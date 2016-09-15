@@ -46,6 +46,7 @@ int spccase[8]={-1,-1,0,0,0,0,0,0};//row,col,white long castling,short castling,
 void init();
 void prtboard();
 int options(player,move**);
+int check(player);
 int turn()
 {
 static int t=-1;
@@ -563,4 +564,140 @@ for(i=0;i<8;i++)
      goto insert_gate;
  }
 return len;
+}
+int check(player p)
+{
+    int kingr,kingc,i,j;
+    for(i=0;i<8;i++)
+        for(j=0;j<8;j++)
+            if(board[i][j]==WKING*p)
+    {
+        kingr=i;
+        kingc=j;
+        break;
+    }
+    if(kingr+2<8)//KNIGHT
+    {
+       if(kingc+1<8 &&(board[kingr+2][kingc+1]*p==BKNIGHT))//not a friend
+           return 1;
+       if(kingc-1>-1&&(board[kingr+2][kingc-1]*p==BKNIGHT))
+           return 1;
+    }
+     if(kingr-2>-1)//KNIGHT
+     {
+         if(kingc+1<8 &&(board[kingr-2][kingc+1]*p==BKNIGHT))//not a friend
+              return 1;
+         if(kingc-1>-1&&(board[kingr-2][kingc-1]*p==BKNIGHT))
+               return 1;
+     }
+     if(kingc+2<8)//KNIGHT
+       {
+           if(kingr+1<8 &&(board[kingr+1][kingc+2]*p==BKNIGHT))//not a friend
+               return 1;
+           if(kingr-1>-1&&(board[kingr-1][kingc+2]*p==BKNIGHT))
+               return 1;
+       }
+     if(kingc-2>-1)//KNIGHT
+       {
+          if(kingr+1<8 &&(board[kingr+1][kingc-2]*p==BKNIGHT))//not a friend
+               return 1;
+           if(kingr-1>-1&&(board[kingr-1][kingc-2]*p==BKNIGHT))
+               return 1;
+       }
+ i=kingr-1; //ROOK AND QUEEN
+while(i>-1)//bottom side
+       {
+       if(board[i][kingc]==SQUARE)
+           {
+           i--; continue;
+           }
+       if(board[i][kingc]*p==BROOK ||board[i][kingc]*p==BQUEEN)//first enemy
+           return 1;
+       break;
+       }
+   i=kingr+1;
+   while(i<8)//upper side
+       {
+       if(board[i][kingc]==SQUARE)
+           {
+           i++; continue;
+           }
+       if(board[i][kingc]*p==BROOK ||board[i][kingc]*p==BQUEEN)//first enemy
+           return 1;
+       break;
+       }
+   i=kingc-1;
+   while(i>-1)//left side
+   {
+   if(board[kingr][i]==SQUARE)
+       {
+        i--; continue;
+       }
+   if(board[kingr][i]*p==BROOK || board[kingr][i]*p==BQUEEN)
+       return 1;
+   break;
+   }
+   i=kingc+1;
+   while(i<8)//the right side
+   {
+   if(board[kingr][i]==SQUARE)
+       {
+           i++; continue;
+       }
+   if(board[kingr][i]*p==BROOK || board[kingr][i]*p==BQUEEN)
+      return 1;
+   break;
+   }
+ j=kingr+1; //BISHOP AND QUEEN
+  while(j<8 && kingc+j-kingr<8)//right-upper diaginal
+  {
+	 if(board[j][kingc+j-kingr]==SQUARE)
+	   {
+        j++; continue;
+       }
+	 if(board[j][kingc+j-kingr]*p==BBISHOP || board[j][kingc+j-kingr]*p==BQUEEN)
+		return 1;
+	 break;
+  }
+  j=kingr+1;
+  while(j<8 && kingc-j+kingr>-1)//left-upper diaginal
+  {
+	 if(board[j][kingc-j+kingr]==SQUARE)
+	   {
+        j++; continue;
+       }
+	 if(board[j][kingc-j+kingr]*p==BBISHOP || board[j][kingc-j+kingr]*p==BQUEEN)
+		return 1;
+	 break;
+  }
+  j=kingr-1;
+  while(j>-1 && kingc+j-kingr>-1)//left-bottom diaginal
+  {
+	 if(board[j][kingc+j-kingr]==SQUARE)
+	   {
+        j--; continue;
+       }
+	 if(board[j][kingc+j-kingr]*p==BBISHOP || board[j][kingc+j-kingr]*p==BQUEEN)
+		return 1;
+	 break;
+  }
+  j=kingr-1;
+  while(j>-1 && kingc-j+kingr<8)//right-bottom diaginal
+  {
+     if(board[j][kingc-j+kingr]==SQUARE)
+	   {
+        j--; continue;
+       }
+	 if(board[j][kingc-j+kingr]*p==BBISHOP || board[j][kingc-j+kingr]*p==BQUEEN)
+		return 1;
+	 break;
+  }
+  if(kingr+p<7 && kingr+p>0) //to validate the pawn option
+  {
+      if(kingc+1<8 && board[kingr+p][kingc+1]*p==BPAWN)
+        return 1;
+      if(kingc-1>-1 && board[kingr+p][kingc+1]*p==BPAWN)
+        return 1;
+  }
+  return 0;//all the attacked are protected or not there
 }
