@@ -559,7 +559,7 @@ for(i=0;i<8;i++)
 }
  if(!insert)//making array
  {
-     *list=malloc(len*sizeof(move));
+     *list=(move*)malloc(len*sizeof(move));
      insert=1;
      goto insert_gate;
  }
