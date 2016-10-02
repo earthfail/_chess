@@ -699,5 +699,11 @@ while(i>-1)//bottom side
       if(kingc-1>-1 && board[kingr+p][kingc+1]*p==BPAWN)
         return 1;
   }
+  for(i=kingr-1;i<=kingr+1;i++)
+   for(j=kingc-1;j<=kingc+1;j++)
+    {
+     if(i<0 || i>7 || j<0 || j>7) continue;
+       if(board[i][j]*p==BKING) return 1;
+    }
   return 0;//all the attacked are protected or not there
 }
